@@ -3,6 +3,7 @@ from tensorflow.keras.preprocessing.image import load_img
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from sklearn.preprocessing import LabelBinarizer
+from tensorflow.keras.utils import to_categorical
 
 #Δημιουργία μιας μεταβλητής (string type) με περιεχόμενο τη τοποθεσία των εικόνων
 #που θα χρησιμοποιηθούν για την εκπαίδευση του μοντέλου
@@ -83,10 +84,25 @@ for dataset_class in dataset_classes:
 		#με μεγαλύτερη ευκολία
 		labels.append(dataset_class)
 
-		#Επειδή τα deep learning μοντέλα λειτουργούν σωστά μόνο με arrays, τα labels παρακάτω
-		#απο λίστα μετατρέπονται και αυτά σε arrays και ειδικότερα τα δεδομένα του που ήταν
-		#προηγουμένως αλφαριθμητικά, πλέον θα είναι αριθμοί.
-		lb = LabelBinarizer()
-		print(lb)
-		#labels = lb.fit_transform(labels)
-		#labels = to_categorical(labels)
+#Επειδή τα deep learning μοντέλα λειτουργούν σωστά μόνο με arrays, τα labels παρακάτω
+#απο λίστα μετατρέπονται και αυτά σε arrays και ειδικότερα τα δεδομένα του που ήταν
+#προηγουμένως αλφαριθμητικά, πλέον θα είναι αριθμοί.
+#Αρχικά καλείται η κλάση LabelBinarizer() η οποία δημιουργεί το αντικείμενο (object) lb.
+#Αυτό γίνεται για να μπορούμε να χρησιμοποιήσουμε τις μεθόδους(class methods) της προαναφερόμενης
+#κλάσης πιο εύκολα.
+lb = LabelBinarizer()
+
+#Το object lb καλεί την μέθοδο fit_transform πάνω στη λίστα labels και μετατρέπει όλα τα δεδομένα
+#της σε 0 και 1. Δηλαδή το αλφαριθμητικό "with_mask" αντικαταστάθηκε με τον αριθμό 0 και το "without_mask"
+#με τον αριθμό 1. Επίσης το labels απο λίστα μετατρέπεται σε array (class numpy.ndarray) με δεδομένα της μορφής
+#[0] ή [1].
+labels = lb.fit_transform(labels)
+
+#Η μέθοδος to_categorial χρησιμοποιεί την κωδικοποίηση One-hot encoding η οποία μετατρέπει μια λίστα/array που περιέχει
+#κατηγορίες όπως το labels σε μορφή τέτοια που μπορεί να χρησιμοποιηθεί εύκολα από αλγόριθμους μηχανικής
+#εκμάθησης (machine learning algorithms).Η βασική ιδέα της κωδικοποίησης αυτής είναι η δημιουργία νέων μεταβλητών που
+#λαμβάνουν τις τιμές 0 και 1 για να αντιπροσωπεύουν τις αρχικές κατηγορικές τιμές. Το labels μετά την κωδικοποίηση
+#θα περιέχει δεδομένα της μορφής [1. 0.] για "with_mask" ή [0. 1.] για "without_mask".
+labels = to_categorical(labels)
+print(type(labels))
+print(labels)
