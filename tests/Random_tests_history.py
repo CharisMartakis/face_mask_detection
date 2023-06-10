@@ -60,6 +60,8 @@
 # #     print("{} begins with \"{}\"".format(planet.rjust(10), initial))
 # def multi_word_search(doc_list, keywords):
 
+
+######Provlima apo Sololearn sxetika me Linked Lists
 class Node:
     def __init__(self, data, next):
         self.data = data
@@ -67,7 +69,7 @@ class Node:
         print("node data: " + str(self.data))
         print("node next: " + str(self.next))
 
-######Provlima apo Sololearn sxetika me Linked Lists
+
 class LinkedList:
     def __init__(self):
         self.head = None
@@ -108,3 +110,20 @@ s.add_at_front(9)
 
 s.print_list()
 print(s.get_last_node())
+
+
+##########Provlhma Sololearn sxetika me decor###########
+
+def decor(func):
+    def wrap():
+        print("============")
+        func()
+        print("============")
+    return wrap
+
+def print_text():
+    print("Hello world!")
+
+#decorated = decor(print_text)
+#decorated()
+decor(print_text)

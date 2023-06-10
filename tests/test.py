@@ -1,13 +1,6 @@
-def decor(func):
-    def wrap():
-        print("============")
-        func()
-        print("============")
-    return wrap
+import numpy as np
 
-def print_text():
-    print("Hello world!")
-
-#decorated = decor(print_text)
-#decorated()
-decor(print_text)
+a = np.array([[1., 2., 3.], [1., 2., 3.]], dtype=int)
+print(a)
+print(type(a))
+print(a.dtype)
