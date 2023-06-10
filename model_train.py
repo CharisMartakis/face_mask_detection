@@ -6,7 +6,22 @@ from sklearn.preprocessing import LabelBinarizer
 from tensorflow.keras.utils import to_categorical
 import numpy as np
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
+# Αρχικοποίηση των μεταβλητών initial learning rate, epochs και batch size. Κάνοντας αλλαγές στις παραμέτρους αυτές,
+#μπορούμε να εκπαιδεύσουμε διαφορετικά μοντέλα και να τα συγκρίνουμε ώστε στο τέλος να κρατήσουμε εκείνο με τα καλύ-
+#τερα δυνατά αποτελέσματα και το μεγαλύτερο ποσοστό επιτυχίας.
+#1)Initial learning Rate(INIT_LR): Είναι μια υπερπαράμετρος που καθορίζει πόσο γρήγορα ή αργά η συνάρτηση βελτιστοποίησης
+#του σφάλματος που έχουμε επιλέξει(Adam) κατεβαίνει την καμπύλη σφάλματος. Συνήθως η τιμή της βρίσκεται ανάμεσα στο
+#0.0001 and 0.01.
+#2)Epochs(EPOCHS): Είναι μια υπερπαράμετρος η οποία ορίζει τον αριθμό των επαναλήψεων που θα χρειαστεί να εκτελεστούν
+#για την εκπαίδευση του μοντέλου
+#3)Batch size(BS): Είναι μια υπερπαράμετρος η οποία θέτει τον αριθμό των δεδομένων εκπαίδευσης(trainX, trainY) που
+#χρησιμοποιούμε σε μια εποχή(epoch) για να εκπαιδεύσουμε το νευρωνικό δίκτυο. Συνήθως για τα CNN επιλέγεται το 32.
+INIT_LR = 0.001
+EPOCHS = 20
+BS = 32
+									"""Μέρος 1ο - Preprocessing"""
 #Δημιουργία μιας μεταβλητής (string type) με περιεχόμενο τη τοποθεσία των εικόνων
 #που θα χρησιμοποιηθούν για την εκπαίδευση του μοντέλου
 #dataset_location = r"D:\projects\face_mask_detection\dataset"
@@ -134,6 +149,15 @@ data = np.array(data, dtype="float32")
 #όλως των υπόλοιπων μοντέλων μας.
 (trainX, testX, trainY, testY) = train_test_split(data, labels, test_size=0.20, stratify=labels, random_state=42)
 
+#Data augmentation:
+aug = ImageDataGenerator(
+rotation_range=20,
+zoom_range=0.15,
+width_shift_range=0.2,
+height_shift_range=0.2,
+shear_range=0.15,
+horizontal_flip=True,
+fill_mode="nearest")
 
 print(type(testX))
 print(testX)
