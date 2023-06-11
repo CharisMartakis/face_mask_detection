@@ -22,6 +22,8 @@ INIT_LR = 0.001
 EPOCHS = 20
 BS = 32
 									"""Μέρος 1ο - Preprocessing"""
+
+
 #Δημιουργία μιας μεταβλητής (string type) με περιεχόμενο τη τοποθεσία των εικόνων
 #που θα χρησιμοποιηθούν για την εκπαίδευση του μοντέλου
 #dataset_location = r"D:\projects\face_mask_detection\dataset"
@@ -149,7 +151,24 @@ data = np.array(data, dtype="float32")
 #όλως των υπόλοιπων μοντέλων μας.
 (trainX, testX, trainY, testY) = train_test_split(data, labels, test_size=0.20, stratify=labels, random_state=42)
 
-#Data augmentation:
+									"""Μέρος 2ο - Data augmentation"""
+
+
+#Δημιουργία του αντικειμένου aug απο τη κλάση ImageDataGenerator της βιβλιοθήκης tensorflow.keras.preprocessing.image
+#Το ImageDataGenerator() είναι μια κλάση που βοηθάει στην άυξηση των δεδομένων(data augmentation) και συγκεκριμένα
+#των εικόνων που θα εκπαιδευτεί το μοντέλο. Το βασικό πλεονέκτημα της αύξησης αυτής είναι πως δεν χρειάζεται να
+#αναζητήσει κάποιος χειροκίνητα νέες εικόνες στο διαδίκτυο για να εμπλουτίσει το dataset. Η κλάση αυτή λαμβάνει
+#κάθε εικόνα του trainX με τη σειρά κατα την εκπαίδευση του μοντέλου, την αντιγράφει και επεξεργάζεται το αντίγραφο
+#της με τέτοιο τρόπο ώστε να φαίνεται σαν να είναι μια νέα διαφορετική εικόνα. Οι επεξεργασίες που θα δεχτεί το αντίγραφο
+#είναι συγκεκριμένες και εξαρτώνται απο τα ορίσματα/ιδιότητες της κλάσης αυτής που θα επιλεχθούν.
+#Συγκεκριμένα επιλέχθηκαν:
+# rotation_range=20:
+# zoom_range=0.15:
+# width_shift_range=0.2:
+# height_shift_range=0.2:
+# shear_range=0.15:
+# horizontal_flip=True:
+# fill_mode="nearest":
 aug = ImageDataGenerator(
 rotation_range=20,
 zoom_range=0.15,
@@ -159,11 +178,17 @@ shear_range=0.15,
 horizontal_flip=True,
 fill_mode="nearest")
 
-print(type(testX))
-print(testX)
-print(len(testX))
-print(len(trainX))
-print(len(testY))
-print(len(trainY))
+
+
+
+
+
+
+# print(type(testX))
+# print(testX)
+# print(len(testX))
+# print(len(trainX))
+# print(len(testY))
+# print(len(trainY))
 # print(type(labels))
 # print(labels)
