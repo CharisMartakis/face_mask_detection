@@ -7,21 +7,27 @@ from tensorflow.keras.utils import to_categorical
 import numpy as np
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.layers import Input
 
-# Αρχικοποίηση των μεταβλητών initial learning rate, epochs και batch size. Κάνοντας αλλαγές στις παραμέτρους αυτές,
+# Αρχικοποίηση των μεταβλητών initial learning rate, epochs, batch size και image size. Κάνοντας αλλαγές στις παραμέτρους αυτές,
 #μπορούμε να εκπαιδεύσουμε διαφορετικά μοντέλα και να τα συγκρίνουμε ώστε στο τέλος να κρατήσουμε εκείνο με τα καλύ-
 #τερα δυνατά αποτελέσματα και το μεγαλύτερο ποσοστό επιτυχίας.
 #1)Initial learning Rate(INIT_LR): Είναι μια υπερπαράμετρος που καθορίζει πόσο γρήγορα ή αργά η συνάρτηση βελτιστοποίησης
 #του σφάλματος που έχουμε επιλέξει(Adam) κατεβαίνει την καμπύλη σφάλματος. Συνήθως η τιμή της βρίσκεται ανάμεσα στο
 #0.0001 and 0.01.
 #2)Epochs(EPOCHS): Είναι μια υπερπαράμετρος η οποία ορίζει τον αριθμό των επαναλήψεων που θα χρειαστεί να εκτελεστούν
-#για την εκπαίδευση του μοντέλου
+#για την εκπαίδευση του μοντέλου.
 #3)Batch size(BS): Είναι μια υπερπαράμετρος η οποία θέτει τον αριθμό των δεδομένων εκπαίδευσης(trainX, trainY) που
 #χρησιμοποιούμε σε μια εποχή(epoch) για να εκπαιδεύσουμε το νευρωνικό δίκτυο. Συνήθως για τα CNN επιλέγεται το 32.
+#4)Image size(IMAGE_SIZE): Είναι μια παράμετρος η οποία ορίζει τις νέες διαστάσεις που θα έχουν οι εικόνες για την
+#εκπαίδευση του μοντέλου.
 INIT_LR = 0.001
 EPOCHS = 20
 BS = 32
-									"""Μέρος 1ο - Preprocessing"""
+IMAGE_SIZE = 224
+
+#									"""Μέρος 1ο - Preprocessing"""
 
 
 #Δημιουργία μιας μεταβλητής (string type) με περιεχόμενο τη τοποθεσία των εικόνων
@@ -73,7 +79,7 @@ for dataset_class in dataset_classes:
 		#το load_img φορτώνει στην μεταβλητή image την εικόνα αυτή με τις συγκεκριμένες
 		#διαστάσεις που ορίζει το target_size. Άρα με αυτήν την εντολή προσαρμόζουμε όλες
 		#τις εικόνες έτσι ώστε να έχουν την ίδια διάσταση με το ίδιο aspect ratio που είχαν
-		image = load_img(img_path, target_size=(224, 224))
+		image = load_img(img_path, target_size=(IMAGE_SIZE, IMAGE_SIZE))
 
 		#Μετατροπή της εικόνας που βρίσκεται στο image σε μορφή πίνακα(array) για να μπορούμε
 		#να την επεξεργαστούμε αργότερα πιο εύκολα. Ένα κομμάτι του array αυτού θα έχει για
@@ -151,7 +157,8 @@ data = np.array(data, dtype="float32")
 #όλως των υπόλοιπων μοντέλων μας.
 (trainX, testX, trainY, testY) = train_test_split(data, labels, test_size=0.20, stratify=labels, random_state=42)
 
-									"""Μέρος 2ο - Data augmentation"""
+
+#									"""Μέρος 2ο - Data augmentation"""
 
 
 #Δημιουργία του αντικειμένου aug απο τη κλάση ImageDataGenerator της βιβλιοθήκης tensorflow.keras.preprocessing.image
@@ -195,13 +202,32 @@ horizontal_flip=True,
 fill_mode="nearest")
 
 
+#						"""Μέρος 3ο - Κατασκευή του μοντέλου με τη μέθοδο TRANSFER LEARNING """
 
 
+#Δημιουργία ενός απο τα 2 μέρη του μοντέλου που θα εκπαιδεύσουμε.Το πρώτο αυτό μέρος ονομάζεται βασικό μοντέλο(baseModel)
+#και χρησιμοποιεί την αρχιτεκτονική του συνελικτικού νευρωνικού δικτύου MobileNetV2 που έχει ήδη εκπαιδευτεί(pre-trained
+# model) στο παρελθόν. Η μεταβλητή baseModel μετατρέπεται σε νευρωνικό δίκτυο άρα και σε αντικείμενο(object) της βιβλιοθήκης
+#keras.engine.functional.Functional, με χαρακτηριστικά που δηλώνονται στις παρακάτω ιδιότητες.
+#1)weights: Η συγκεκριμένη ιδιότητα δέχεται την παράμετρο "imagenet"
+baseModel = MobileNetV2(weights="imagenet", include_top=False, input_tensor=Input(shape=(224, 224, 3)))
+
+# # construct the head of the model that will be placed on top of the
+# # the base model
+# headModel = baseModel.output
+# headModel = AveragePooling2D(pool_size=(7, 7))(headModel)
+# headModel = Flatten(name="flatten")(headModel)
+# headModel = Dense(128, activation="relu")(headModel)
+# headModel = Dropout(0.5)(headModel)
+# headModel = Dense(2, activation="softmax")(headModel)
+#
+# # place the head FC model on top of the base model (this will become
+# # the actual model we will train)
+# model = Model(inputs=baseModel.input, outputs=headModel)
 
 
-
-# print(type(testX))
-# print(testX)
+print(type(baseModel))
+print(baseModel)
 # print(len(testX))
 # print(len(trainX))
 # print(len(testY))
