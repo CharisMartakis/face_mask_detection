@@ -14,7 +14,8 @@ from tensorflow.keras.layers import Flatten
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Dropout
 from tensorflow.keras.models import Model
-
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers.schedules import ExponentialDecay
 # Αρχικοποίηση των μεταβλητών initial learning rate, epochs, batch size και image size. Κάνοντας αλλαγές στις παραμέτρους αυτές,
 #μπορούμε να εκπαιδεύσουμε διαφορετικά μοντέλα και να τα συγκρίνουμε ώστε στο τέλος να κρατήσουμε εκείνο με τα καλύ-
 #τερα δυνατά αποτελέσματα και το μεγαλύτερο ποσοστό επιτυχίας.
@@ -309,10 +310,17 @@ model = Model(inputs=baseModel.input, outputs=headModel)
 for layer in baseModel.layers:
 	layer.trainable = False
 
-# # compile our model
-# print("[ΕΝΗΜΕΡΩΣΗ] compiling model...")
-# opt = Adam(lr=INIT_LR, decay=INIT_LR / EPOCHS)
-# model.compile(loss="binary_crossentropy", optimizer=opt,
-# 	metrics=["accuracy"])
+# #Δημιουργία του αντικειμένου opt το οποίο ε
+# print("[ΕΝΗΜΕΡΩΣΗ] Γίνεται μεταγλώτισση τουμοντέλου...")
+# # Define the learning rate schedule
+# lr_schedule = ExponentialDecay(initial_learning_rate=INIT_LR, decay_steps=EPOCHS, decay_rate=INIT_LR/EPOCHS)
+# opt = Adam(learning_rate=lr_schedule)
 
+
+
+
+# model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+
+
+#						"""Μέρος 4ο - Εκπαίδευση και αξιολόγηση του μοντέλου """
 #print(model)
