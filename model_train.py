@@ -9,6 +9,11 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.layers import Input
+from tensorflow.keras.layers import AveragePooling2D
+from tensorflow.keras.layers import Flatten
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dropout
+from tensorflow.keras.models import Model
 
 # Αρχικοποίηση των μεταβλητών initial learning rate, epochs, batch size και image size. Κάνοντας αλλαγές στις παραμέτρους αυτές,
 #μπορούμε να εκπαιδεύσουμε διαφορετικά μοντέλα και να τα συγκρίνουμε ώστε στο τέλος να κρατήσουμε εκείνο με τα καλύ-
@@ -205,32 +210,104 @@ fill_mode="nearest")
 #						"""Μέρος 3ο - Κατασκευή του μοντέλου με τη μέθοδο TRANSFER LEARNING """
 
 
-#Δημιουργία ενός απο τα 2 μέρη του μοντέλου που θα εκπαιδεύσουμε.Το πρώτο αυτό μέρος ονομάζεται βασικό μοντέλο(baseModel)
+#Δημιουργία ενός απο τα 2 μέρη του μοντέλου που θα εκπαιδετεί.Το πρώτο αυτό μέρος ονομάζεται βασικό μοντέλο(baseModel)
 #και χρησιμοποιεί την αρχιτεκτονική του συνελικτικού νευρωνικού δικτύου MobileNetV2 που έχει ήδη εκπαιδευτεί(pre-trained
 # model) στο παρελθόν. Η μεταβλητή baseModel μετατρέπεται σε νευρωνικό δίκτυο άρα και σε αντικείμενο(object) της βιβλιοθήκης
 #keras.engine.functional.Functional, με χαρακτηριστικά που δηλώνονται στις παρακάτω ιδιότητες.
-#1)weights: Η συγκεκριμένη ιδιότητα δέχεται την παράμετρο "imagenet"
-baseModel = MobileNetV2(weights="imagenet", include_top=False, input_tensor=Input(shape=(224, 224, 3)))
+#1)weights: Εδώ αρχικοποιούνται τα βάρη του νευρωνικού δικτύου όπου επιλέχθηκαν να είναι ίσα με τα προεκπαιδευμένα (pre-trained)
+#βάρη που προέκυψαν απο την εκπαίδευση του MobileNetV2 πάνω στο dataset του Imagenet στο παρελθόν. To Imagenet είναι ένα
+#τεράστιο dataset που περιέχει εκκατομύρια labels εικόνων διαφορετικών κατηγοριών. Εκπαιδεύοντας το μοντέλο μας με αυτά
+#βάρη, επιτυγχάνετε μείωση του χρόνου εκπαίδευσης και καλύτερα αποτελέσματα αφού αυτά τα βάρη μπορούν να αναγνωρίζουν κάποια
+#γενικά οπτικά μοτίβα(general visual patterns) μέσα σε μια εικόνα.
+#2)include_top: Με τη boolean τιμή False αφαιρούνται απο την κορυφή του νευρωνικού δικτύου τα πλήρως συνδεδεμένα επίπεδα
+#(FC layers) που ήταν υπεύθυνα για τη ταξινόμηση(classification) των τελικών αποτελεσμάτων΄. Αυτά τα FC layers(Fully Connected Layers)
+#καταργούνται διότι αργότερα θα προσθέσουμε τα δικά μας FC layers που θα εκπαιδεύσουμε στο headModel και θα ταξινομούν τα δεδομένα
+#στις κατηγορίες που θέλουμε εμείς για την συγκεκριμένη εργασία.
+#3)input_tensor: Εδώ δηλώνονται οι διαστάσεις των εικόνων του dataset που θα εκπαιδευτεί το μοντέλο καθώς και το είδος των
+#εικόνων όπου στην συγκεκριμένη περίπτωση θα είναι έγχρωμες 3 επιπέδων(RGB).
+baseModel = MobileNetV2(weights="imagenet", include_top=False, input_tensor=Input(shape=(IMAGE_SIZE, IMAGE_SIZE, 3)))
 
-# # construct the head of the model that will be placed on top of the
-# # the base model
-# headModel = baseModel.output
-# headModel = AveragePooling2D(pool_size=(7, 7))(headModel)
-# headModel = Flatten(name="flatten")(headModel)
-# headModel = Dense(128, activation="relu")(headModel)
-# headModel = Dropout(0.5)(headModel)
-# headModel = Dense(2, activation="softmax")(headModel)
-#
-# # place the head FC model on top of the base model (this will become
-# # the actual model we will train)
-# model = Model(inputs=baseModel.input, outputs=headModel)
+#Δημιουργία του 2ου μέρους του μοντέλου που θα εκπαιδετεί. Αυτό ονομάζεται headModel, το οποίο αποτελείται κυρίως απο τα
+#FC layers που προαναφέρθηκαν και είναι υπεύθυνο για την ταξινόμηση των δεδομένων και την σωστή επιλογή των τελικών αποτελεσμάτων
+#(with mask/wothout mask). Αρχικά με την εντολή baseModel.output δηλώνεται ότι η μεταβλητή headModel θα είναι η έξοδος
+#του baseModel άρα θα δέχεται τα δεδομένα(εξαγόμενα χαρακτηριστικά μιας εικόνας) που επεξεργάστηκε το baseModel και με τη
+#σειρά του θα τα περνάει και αυτό απο επεξεργασία για την τελική τους ταξινόμηση. Πιο συγκεκριμένα αυτό το σύνολο δεδομένων
+#που θα δεχτεί το headModel ονομάζεται feature map και έχει τριδιάστατη μορφή 7x7x1280. Το feature map περιέχει πληροφορίες
+#για τα χαρακτηριστικά μιας εικόνας. Επίσης τα layers που θα χρησιμοποιηθούν βρίσκονται στο tensorflow.keras.layers.
+headModel = baseModel.output
+
+#Ενσωμάτωση του AveragePooling2D layer στο headModel. Αυτό το layer μετατρέπει την μορφή του feature map απο 7x7x1280
+#σε 1x1x1280 εαν το pool_size επλιλεχθεί (7,7). Αυτός ο μετασχηματισμός δέχεται κάθε κανάλι(channel) του 7x7x1280 με τη σειρά
+#και απο 49(7x7) pixel το αλλάζει σε 1(1x1). Συγκεκριμένα υπολογίζεται ο μέσος όρος των τιμών που περιέχουν τα 49 pixel
+#και αυτός αποθηκεύεται στη νέα μορφή του feature map. Κάποια απο τα πλεονέκτημα αυτής της διαδικασίας είναι η μείωση των
+#χωρικών διαστάσεων spatial dimensions,η μείωση του θορύβου και η βελτίωση της υπολογιστικής απόδοσης.
+headModel = AveragePooling2D(pool_size=(7, 7))(headModel)
+
+#Ενσωμάτωση του Flatten στο headModel. Το layer αυτό δέχεται το αποτέλεσμα του AveragePooling2D καλώντας δίπλα απο την εντολή
+#Flatten(name="flatten") το (headModel). Συγκεκριμένα δέχεται το feature map της μορφής 1x1x1280 το οποίο έχει 1280 κανάλια
+#και το μετατρέπει σε ένα διάνυσμα(vector) μιας μόνο διάστασης δηλαδή 1x1280. Αυτή η διαδικασία κυρίως βοηθάει στη συμβατότητα
+#αφού απο το επόμενο βήμα που θα ακολουθήσουν τα FC layers αυτά θα δεχτούν ως inputs το feature map που θα πρέπει να έχει
+#τη μορφή μονοδιάστατου διανύσματος. Ειδικότερα το Flatten layer παίζει κρίσιμο ρόλο στη μετάβαση από τa CNN επίπεδα στα
+#FC επίπεδα των νευρωνικών δικτύων. Ακόμα, κάθε στοιχείο του διανύσματος πλέον θεωρείται ως ένας νευρώνας, άρα το FC layers
+#θα δεχτεί 1280 τιμές ως εισόδους σε κάθε νευρώνα που περιέχει το επόμενο layer.
+headModel = Flatten(name="flatten")(headModel)
+
+#Δημιουργία ενός FC layer. Το Dense δέχεται ως είσοδο τις 1280 τιμές του διανύσματος που δημιούργησε το Flatten αναγνωρίζοντάς
+#τις ως αρχικούς νευρώνες και δημιουργεί ένα FC layer που αποτελείται απο 128 νέους νευρώνες. Κάθε νέος νευρώνας απο τους
+#128 δέχεται την τιμή που περιέχει κάθε νευρώνας απο τους 1280 την οποία πολλαπλασιάζει με τυχαία βάρη(weights) αφου αυτά
+#θα πάρουν τις τελικές τους σωστές τιμές μετά την εκπαίδευση του τελικού μοντέλου. Στη συνέχεια όλα αυτά τα σύνολα
+#γινομένων προσθέτονται μεταξύ τους και δίνουν μια τιμή ως αποτέλεσμα η οποία είναι πιθανόν να έχει αρνητική τιμή πέρα απο
+#μηδενική ή θετική.Επιπλέον, στο προηγούμενο άθροισμα μπορεί να προστεθεί και μια τιμή που ονομάζεται πόλωση(bias) που
+#επίσης θα αλλάξει με την εκπαίδευση. Επειδή οι τιμές θέλουμε να ειναι θετικές χρησιμοποιήται η συνάρτηση ενεργοποίησης Rectified Linear Units
+#(Relu) η οποία ανιχνεύθει την τιμή που έχει ο νέος νευρώνας και εαν αυτή είναι αρνητική την μετατρέπει σε μηδέν. Σε κάθε
+#άλλη περίπτωση η τιμή παραμένει ίδια.
+headModel = Dense(128, activation="relu")(headModel)
+
+#Εφαρμογή του Dropout στις τιμές που παρήγαγαν οι νευρώνες του προηγούμενου layer. Το dropout είναι μια τεχνική τακτοποίησης
+#(regularization technique) που απορρίπτει τυχαία το 50% των εξόδων των νευρώνων από το προηγούμενο layer κατά τη διάρκεια
+#της εκπαίδευσης του τελικού μοντέλου.Αυτό βοηθά στην αποφυγή της υπερεκπαίδευσης(overfitting) που είναι η κατάσταση στην οποία
+#το μοντέλο έχει καταφέρει να εκπαιδευτεί πολύ καλά πάνω στo dataset που ορίστηκε για την εκπαίδευση του με αποτέλεσμα να μην
+#ανταποκρίνεται σωστά σε άλλα δεδομένα που του δίνονται. Πιο συγκεκριμένα με το Dropout γίνεται αποφυγή της υπερεκπαίδευσης
+#κάνοντας το δίκτυο να μη βασίζεται μόνο σε συγκεκριμένους νευρώνες αλλά να εκαπιδεύεται με πιο γενικευμένα χαρακτηριστικά
+#(generalized features).
+headModel = Dropout(0.5)(headModel)
+
+#Δημιουργία του δεύτερου και τελευταίου FC layer. Το Dense αυτη τη φορά δέχεται στην είσοδό του τις εξόδους του προηγούμενου
+#FC layer με τους 128 νευρώνες των οποίων οι μισές τιμές θα είναι πλέον μηδενικές λόγω του Dropout. Το Dense εδώ δημιουργεί
+#τους 2 τελικούς νευρώνες του δικτύου και αναλόγως τη τιμή τους το μοντέλο θα έχει πάρει την τελική απόφαση, δηλαδή εαν η
+#εικόνα που επεξεργάστηκε ανήκει στην κατηγορία with mask ή without mask. Όπως και στο προηγούμενο FC layer έτσι και εδώ
+#κάθε ένας απο τους 2 νευρώνες θα λαμβάνει στην είσοδό του όλες τις εξόδους των προηγούμενων 128 νευρώνων. Αυτές οι τιμές
+#θα πολλαπλασιάζονται και εδώ με κάποια βάρη και έπειτα υπολογίζεται το άθροισμα όλων αυτών των γινομένων και ενδεχομένως
+#η πρόσθεση σε αυτό το άθροισμα μιας τιμής του bias. Έτσι οι 2 νευρώνες θα έχουν απο μια τιμή ο καθένας η οποία επειδή
+#μπορεί να είναι μεγαλύτερη του 1 θα πρέπει να την μετατρέψουμε σε τιμή πιθανότητας δηλαδή ανάμεσα στο 0 και το 1. Αυτό
+#το επιτυγχάνουμε με την συνάρτηση ενεργοποίησης softmax η οποία προσαρμόζει τις τιμές στο πεδίο που θέλουμε[0-1]. Η
+#πιθανότητα αυτή θα είναι το τελικό αποτέλεσμα που θα κρίνει το μοντέλο εαν κατάφερε να αναγνωρίσει την κατάσταση της εικόνας
+#που δέχτηκε σαν είσοδο κατα την εκπαίδευση και ποια είναι η πιθανότητα/το ποσοστό που το κατάφερε. Αναλόγως την πιθανότητα
+#και το ποσοστό επιτυχίας του το νευρωνικό δίκτυο ενημερώνει τα βάρη του και τα bias με σκοπό να μειώσει όσο περισσότερο
+#μπορεί το ποσοστό λάθους.
+headModel = Dense(2, activation="softmax")(headModel)
+
+#Παρακάτω φαίνονται αναλυτικά όλα τα layers του headModel και τα χαρακτηριστικά τους:
+# KerasTensor(type_spec=TensorSpec(shape=(None, 7, 7, 1280), dtype=tf.float32, name=None), name='out_relu/Relu6:0', description="created by layer 'out_relu'")
+# KerasTensor(type_spec=TensorSpec(shape=(None, 1, 1, 1280), dtype=tf.float32, name=None), name='average_pooling2d/AvgPool:0', description="created by layer 'average_pooling2d'")
+# KerasTensor(type_spec=TensorSpec(shape=(None, 1280), dtype=tf.float32, name=None), name='flatten/Reshape:0', description="created by layer 'flatten'")
+# KerasTensor(type_spec=TensorSpec(shape=(None, 128), dtype=tf.float32, name=None), name='dense/Relu:0', description="created by layer 'dense'")
+# KerasTensor(type_spec=TensorSpec(shape=(None, 128), dtype=tf.float32, name=None), name='dropout/Identity:0', description="created by layer 'dropout'")
+# KerasTensor(type_spec=TensorSpec(shape=(None, 2), dtype=tf.float32, name=None), name='dense_1/Softmax:0', description="created by layer 'dense_1'")
+
+#Ενοποίηση των 2 επιμέρους νευρωνικών δικτύων που δημιουργήθηκαν σε 1(model), δηλαδή του baseModel που είναι το CNN για την δημιουργία
+#feature map απο τις εικόνες του training dataset και του headModel που περιέχει τα FC layers τα οποία είναι υπεύθυνα
+#για την ταξινόμηση του feature map στις κατηγορίες mask ή without mask. Μετά την σύνδεση του headModel στην κορυφή του
+#baseModel το ολοκληρωμένο νευρωνικό δίκτυο που θα εκπαιδεύσουμε θα έχει την ονομασία model. Η ένωση επιτυγχάνεται με την
+#εντολή Model() που βρίσκεται στο tensorflow.keras.models.
+model = Model(inputs=baseModel.input, outputs=headModel)
+
+#Απενεργοποίηση της δυνατότητας εκπαίδευσης όλων των layers του baseModel αφού είναι ήδη εκπαιδευμένο και δεν θέλουμε να
+#υποστεί κάποια αλλαγή στα βάρη ή γενικότερα στις παραμέτρους του. Αντίθετα το headModel είναι αυτό που θα εκπαιδευτεί
+#εξ ολοκλήρου και απο την αρχή γιατί εκείνο αφορά την ταξινόμηση στις 2 κλάσεις που επιθυμούμε για αυτό το project.
+for layer in baseModel.layers:
+	layer.trainable = False
 
 
-print(type(baseModel))
-print(baseModel)
-# print(len(testX))
-# print(len(trainX))
-# print(len(testY))
-# print(len(trainY))
-# print(type(labels))
-# print(labels)
+
+#print(model)
