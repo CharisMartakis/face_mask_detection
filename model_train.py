@@ -15,7 +15,8 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.optimizers.schedules import ExponentialDecay
+from sklearn.metrics import classification_report
+
 # Αρχικοποίηση των μεταβλητών initial learning rate, epochs, batch size και image size. Κάνοντας αλλαγές στις παραμέτρους αυτές,
 #μπορούμε να εκπαιδεύσουμε διαφορετικά μοντέλα και να τα συγκρίνουμε ώστε στο τέλος να κρατήσουμε εκείνο με τα καλύ-
 #τερα δυνατά αποτελέσματα και το μεγαλύτερο ποσοστό επιτυχίας.
@@ -167,12 +168,12 @@ data = np.array(data, dtype="float32")
 #									"""Μέρος 2ο - Data augmentation-Αύξηση δεδομένων"""
 
 
-#Δημιουργία του αντικειμένου aug απο τη κλάση ImageDataGenerator της βιβλιοθήκης tensorflow.keras.preprocessing.image
+#Δημιουργία του αντικειμένου aug απο τη κλάση ImageDataGenerator της βιβλιοθήκης tensorflow.keras.preprocessing.image.
 #Το ImageDataGenerator() είναι μια κλάση που βοηθάει στην αύξηση των δεδομένων(data augmentation) και συγκεκριμένα
 #των εικόνων που θα εκπαιδευτεί το μοντέλο. Το βασικό πλεονέκτημα της αύξησης αυτής είναι πως δεν χρειάζεται να
 #αναζητήσει κάποιος χειροκίνητα νέες εικόνες στο διαδίκτυο για να εμπλουτίσει το dataset. Η κλάση αυτή λαμβάνει
 #κάθε εικόνα του trainX με τη σειρά κατα την εκπαίδευση του μοντέλου, την αντιγράφει μερικές φορές και επεξεργάζεται
-#αυτά τα αντίγραφα της με τέτοιο τρόπο ώστε να φαίνονται σαν να είναι νέες, διαφορετικές εικόνες απο το προτότυπο.
+#αυτά τα αντίγραφά της με τέτοιο τρόπο ώστε να φαίνονται σαν να είναι νέες, διαφορετικές εικόνες απο το προτότυπο.
 #Έτσι το dataset μας θα έχει μεγαλύτερη ποικιλία εικόνων. Οι επεξεργασίες που θα δεχτούν τα αντίγραφα είναι συγκεκριμένες
 #και εξαρτώνται απο τα ορίσματα/ιδιότητες της κλάσης αυτής που θα επιλεχθούν.
 #Συγκεκριμένα επιλέχθηκαν:
@@ -241,7 +242,7 @@ headModel = baseModel.output
 #σε 1x1x1280 εαν το pool_size επλιλεχθεί (7,7). Αυτός ο μετασχηματισμός δέχεται κάθε κανάλι(channel) του 7x7x1280 με τη σειρά
 #και απο 49(7x7) pixel το αλλάζει σε 1(1x1). Συγκεκριμένα υπολογίζεται ο μέσος όρος των τιμών που περιέχουν τα 49 pixel
 #και αυτός αποθηκεύεται στη νέα μορφή του feature map. Κάποια απο τα πλεονέκτημα αυτής της διαδικασίας είναι η μείωση των
-#χωρικών διαστάσεων spatial dimensions,η μείωση του θορύβου και η βελτίωση της υπολογιστικής απόδοσης.
+#χωρικών διαστάσεων (spatial dimensions),η μείωση του θορύβου και η βελτίωση της υπολογιστικής απόδοσης.
 headModel = AveragePooling2D(pool_size=(7, 7))(headModel)
 
 #Ενσωμάτωση του Flatten στο headModel. Το layer αυτό δέχεται το αποτέλεσμα του AveragePooling2D καλώντας δίπλα απο την εντολή
@@ -392,3 +393,16 @@ print("[ΕΝΗΜΕΡΩΣΗ] Αποθήκευση του μοντέλου ανί�
 #τη βιβλιοθήκη  tensorflow.keras.models.
 model.save("models/mask_detector.model", save_format="h5")
 
+
+
+# make predictions on the testing set
+print("[INFO] evaluating network...")
+predIdxs = model.predict(testX, batch_size=BS)
+
+# for each image in the testing set we need to find the index of the
+# label with corresponding largest predicted probability
+predIdxs = np.argmax(predIdxs, axis=1)
+
+# show a nicely formatted classification report
+print(classification_report(testY.argmax(axis=1), predIdxs,
+	target_names=lb.classes_))
