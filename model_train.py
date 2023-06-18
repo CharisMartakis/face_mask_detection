@@ -1,3 +1,9 @@
+#Προσθήκη όλων των απαραίτητων πακέτων/βιβλιοθηκών για να μπορέσει να τρέξει ο κώδικας. Κάποιες βιβλιοθήκες εισάγονται
+#ολόκληρες απλά με την εντολή "import όνομα_επιθυμητής_βιβλιοθήκης" ενώ απο κάποιες άλλες βιβλιοθήκες εισάγονται μόνο κάποια
+#modules τους που θα χρειαστούν ή κάποιες functions αυτών. Για την εισαγωγή ενός module χρησιμοποιείται η εξής σύνταξη
+#"from όνομα_επιθυμητής_βιβλιοθήκης import όνομα_επιθυμητού_module. Επίσης με την προσθήκη της εντολής "as επιθυμητό_νέο_όνομα"
+#δίπλα απο την εντολή εισαγωγής κάποιου module, δίνεται η δυνατότητα στον κώδικα να καλούμε αυτό το module με ένα νέο
+#όνομα συνήθως πιο σαφές και πιο σύντομο.
 import os
 from tensorflow.keras.preprocessing.image import load_img
 from tensorflow.keras.preprocessing.image import img_to_array
@@ -16,6 +22,7 @@ from tensorflow.keras.layers import Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from sklearn.metrics import classification_report
+import matplotlib.pyplot as plt
 
 # Αρχικοποίηση των μεταβλητών initial learning rate, epochs, batch size και image size. Κάνοντας αλλαγές στις παραμέτρους αυτές,
 #μπορούμε να εκπαιδεύσουμε διαφορετικά μοντέλα και να τα συγκρίνουμε ώστε στο τέλος να κρατήσουμε εκείνο με τα καλύ-
@@ -29,10 +36,17 @@ from sklearn.metrics import classification_report
 #χρησιμοποιούμε σε μια εποχή(epoch) για να εκπαιδεύσουμε το νευρωνικό δίκτυο. Συνήθως για τα CNN επιλέγεται το 32.
 #4)Image size(IMAGE_SIZE): Είναι μια παράμετρος η οποία ορίζει τις νέες διαστάσεις που θα έχουν οι εικόνες για την
 #εκπαίδευση του μοντέλου.
+
+# ORIGINAL BEST VALUES
+# INIT_LR = 1e-4
+# EPOCHS = 20
+# BS = 32
+
 INIT_LR = 0.001
-EPOCHS = 20
-BS = 32
+EPOCHS = 10
+BS = 2
 IMAGE_SIZE = 224
+
 
 #									"""Μέρος 1ο - Preprocessing"""
 
@@ -144,8 +158,9 @@ labels = to_categorical(labels)
 #ως ένα array και συγκεκριμένα τύπου float32.
 data = np.array(data, dtype="float32")
 
-#Το labels επειδή μετατράπηκε προηγουμένως σε array τύπου float32 δεν χρειάζεται να εκτελέσουμε την εξής ενολή:
-#labels = np.array(labels)
+#Το labels επειδή μετατράπηκε προηγουμένως σε array τύπου float32 δεν χρειάζεται θεωρητικά να εκτελεστεί η παρακάτω
+#εντολή αλλά για λόγους τυπικότητας και ασφάλειας πρέπει να εκτελεστεί
+labels = np.array(labels)
 
 #Η μέθοδος train_test_split της βιβλιοθήκης scikit-learn/(sklearn.model_selection) χωρίζει τα δεδομένα των data και
 #labels σε 4 arrays 2 κατηγοριών. Ουσιαστικά τα δεδομένα τους θα χωριστούν σύμφωνα με το ποσοστό που ορίζει η ιδιότητα
@@ -371,18 +386,7 @@ print("[ΕΝΗΜΕΡΩΣΗ] Η εκπαίδευση του μοντέλου(head
 #Αυτό σημαίνει ότι το μοντέλο θα επαναλάβει τη διαδικασία εκπαίδευσης, πάνω σε ολόκληρο το training set, τόσες φορές όσο η
 #τιμή των epochs(εποχές). Κάθε εποχή αποτελείται από βήματα που ορίζονται από τα step_per_epoch για εκπαίδευση(training) και
 #validation_steps για έλεγχο(testing).
-
-#ORIGINAL
-#HISTORY = model.fit( aug.flow(trainX, trainY, batch_size=BS), steps_per_epoch=len(trainX) // BS, validation_data=(testX, testY), validation_steps=len(testX) // BS, epochs=EPOCHS)
-
-
-
-
-
-#FOR TEST ONLY
-HISTORY = model.fit( aug.flow(trainX, trainY, batch_size=2), steps_per_epoch=len(trainX) // 2, validation_data=(testX, testY), validation_steps=len(testX) // 2, epochs=10)
-
-
+HISTORY = model.fit( aug.flow(trainX, trainY, batch_size=BS), steps_per_epoch=len(trainX) // BS, validation_data=(testX, testY), validation_steps=len(testX) // BS, epochs=EPOCHS)
 
 #Εκτύπωση ενημερωτικού μηνύματος στην οθόνη
 print("[ΕΝΗΜΕΡΩΣΗ] Αποθήκευση του μοντέλου ανίχνευσης μάσκας στον φάκελο...")
@@ -443,3 +447,41 @@ predIdxs = np.argmax(predIdxs, axis=1)
 #μετρά τη συνολική ορθότητα των προβλέψεων του μοντέλου.
 print(classification_report(testY.argmax(axis=1), predIdxs, target_names=lb.classes_))
 
+
+#						"""Μέρος 5ο - Δημιουργία διαγράμματος για το training loss & accuracy """
+
+# plot the training loss and accuracy -NEW
+
+# Calculate the final loss and accuracy values
+final_train_loss = HISTORY.history["loss"][-1]
+final_train_acc = HISTORY.history["accuracy"][-1]
+final_val_loss = HISTORY.history["val_loss"][-1]
+final_val_acc = HISTORY.history["val_accuracy"][-1]
+
+# Plot the training loss and validation loss
+plt.style.use("bmh")
+plt.figure(figsize=(8, 6))
+plt.plot(np.arange(0, EPOCHS), HISTORY.history["loss"], label="training loss")
+plt.plot(np.arange(0, EPOCHS), HISTORY.history["val_loss"], label="validation loss")
+plt.title("Training and Validation Loss")
+plt.xlabel("Epoch #")
+plt.ylabel("Loss")
+plt.legend(loc="upper right")
+plt.annotate(f"Final Train Loss: {final_train_loss:.4f}", (EPOCHS-1, final_train_loss), textcoords="offset points", xytext=(-10, -10), ha='right')
+plt.annotate(f"Final Val Loss: {final_val_loss:.4f}", (EPOCHS-1, final_val_loss), textcoords="offset points", xytext=(-10, -20), ha='right')
+plt.margins(x=0, y=0)
+plt.savefig("loss_plot.png", dpi=300, bbox_inches="tight")
+
+# Plot the training accuracy and validation accuracy
+plt.style.use("bmh")
+plt.figure(figsize=(8, 6))
+plt.plot(np.arange(0, EPOCHS), HISTORY.history["accuracy"], label="training accuracy")
+plt.plot(np.arange(0, EPOCHS), HISTORY.history["val_accuracy"], label="validation accuracy")
+plt.title("Training and Validation Accuracy")
+plt.xlabel("Epoch #")
+plt.ylabel("Accuracy")
+plt.legend(loc="lower right")
+plt.annotate(f"Final Train Acc: {final_train_acc:.4f}", (EPOCHS-1, final_train_acc), textcoords="offset points", xytext=(-10, -10), ha='right')
+plt.annotate(f"Final Val Acc: {final_val_acc:.4f}", (EPOCHS-1, final_val_acc), textcoords="offset points", xytext=(-10, -20), ha='right')
+plt.margins(x=0, y=0)
+plt.savefig("accuracy_plot.png", dpi=300, bbox_inches="tight")
