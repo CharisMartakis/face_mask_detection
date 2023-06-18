@@ -134,3 +134,4 @@ dmypy.json
 /Untitled.ipynb
 .idea
 name_changes.txt
+/tests/test1.py
