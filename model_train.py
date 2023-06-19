@@ -69,11 +69,11 @@ labels = to_categorical(labels)
 data = np.array(data, dtype="float32")
 labels = np.array(labels)
 
-(trainX, testX, trainY, testY) = train_test_split(data, labels, test_size=0.20, stratify=labels, random_state=42)
+(train_images, test_images, train_labels, test_labels) = train_test_split(data, labels, test_size=0.20, stratify=labels, random_state=42)
 
 #									"""Μέρος 2ο - Data augmentation-Αύξηση δεδομένων"""
 
-aug = ImageDataGenerator(
+aug_gen = ImageDataGenerator(
 rotation_range=20,
 zoom_range=0.15,
 width_shift_range=0.2,
@@ -96,24 +96,24 @@ model = Model(inputs=baseModel.input, outputs=headModel)
 for layer in baseModel.layers:
 	layer.trainable = False
 
-opt = Adam(learning_rate=INIT_LR)
+adam_optim = Adam(learning_rate=INIT_LR)
 
 print("[ΕΝΗΜΕΡΩΣΗ] Γίνεται μεταγλώττιση του μοντέλου...")
 
-model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+model.compile(loss="binary_crossentropy", optimizer=adam_optim, metrics=["accuracy"])
 
 #						"""Μέρος 4ο - Εκπαίδευση και αξιολόγηση του μοντέλου """
 
 print("[ΕΝΗΜΕΡΩΣΗ] Η εκπαίδευση του μοντέλου(head μέρος) ξεκίνησε...")
 
-HISTORY = model.fit( aug.flow(trainX, trainY, batch_size=BS), steps_per_epoch=len(trainX) // BS, validation_data=(testX, testY), validation_steps=len(testX) // BS, epochs=EPOCHS)
+HISTORY = model.fit( aug_gen.flow(train_images, train_labels, batch_size=BS), steps_per_epoch=len(train_images) // BS, validation_data=(test_images, test_labels), validation_steps=len(test_images) // BS, epochs=EPOCHS)
 model.save(f"{folder_of_model}/mask_detector.model", save_format="h5")
 
 print("[ΕΝΗΜΕΡΩΣΗ] Αξιολόγηση του νευρωνικού δικτύου...")
 
-predIdxs = model.predict(testX, batch_size=BS)
-predIdxs = np.argmax(predIdxs, axis=1)
-report = classification_report(testY.argmax(axis=1), predIdxs, target_names=lb.classes_)
+predictions = model.predict(test_images, batch_size=BS)
+predictions = np.argmax(predictions, axis=1)
+report = classification_report(test_labels.argmax(axis=1), predictions, target_names=lb.classes_)
 print(report)
 
 with open(f'{folder_of_model}/classification_report.txt', 'w') as file:
