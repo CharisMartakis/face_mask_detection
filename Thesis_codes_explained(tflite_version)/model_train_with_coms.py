@@ -27,7 +27,7 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
 
-# Αρχικοποίηση των μεταβλητών initial learning rate, epochs, batch size και image size. Κάνοντας αλλαγές στις παραμέτρους αυτές,
+#Αρχικοποίηση των μεταβλητών initial learning rate, epochs, batch size και image size. Κάνοντας αλλαγές στις παραμέτρους αυτές,
 #μπορούμε να εκπαιδεύσουμε διαφορετικά μοντέλα και να τα συγκρίνουμε ώστε στο τέλος να κρατήσουμε εκείνο με τα καλύ-
 #τερα δυνατά αποτελέσματα και το μεγαλύτερο ποσοστό επιτυχίας.
 #1)Initial learning Rate(INIT_LR): Είναι μια υπερπαράμετρος που καθορίζει πόσο γρήγορα ή αργά η συνάρτηση βελτιστοποίησης
@@ -40,14 +40,13 @@ import matplotlib.pyplot as plt
 #4)Image size(IMAGE_SIZE): Είναι μια παράμετρος η οποία ορίζει τις νέες διαστάσεις που θα έχουν οι εικόνες για την
 #εκπαίδευση του μοντέλου.
 
-#ORIGINAL BEST VALUES
 INIT_LR = 1e-4
 EPOCHS = 20
 BS = 32
 IMAGE_SIZE = 224
 
 
-#									"""Μέρος 1ο - Preprocessing"""
+#									"""Μέρος 1ο - Data Preprocessing"""
 
 
 #Παρακάτω ακολουθεί η διαδικασία δημιουργίας μοναδικού φακέλου για το μοντέλο που θα εκπαιδευτεί, ο οποίος θα περιέχει

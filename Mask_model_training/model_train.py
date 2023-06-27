@@ -27,7 +27,7 @@ BS = 32
 IMAGE_SIZE = 224
 
 
-#									"""Μέρος 1ο - Preprocessing"""
+#									"""Μέρος 1ο - Data Preprocessing"""
 
 
 folder_of_model = f"models/{INIT_LR}_{EPOCHS}_{BS}"
@@ -40,6 +40,8 @@ if os.path.exists(folder_of_model):
 print(f"[ΕΝΗΜΕΡΩΣΗ] Η εκπαίδευση του μοντέλου με ονομασία έκδοσης '{folder_of_model[7:]}' ξεκίνησε...")
 
 os.makedirs(folder_of_model)
+
+############   Please change the right path of the dataset on your device   ############
 dataset_location = r"D:\projects\face_mask_detection\dataset"
 dataset_classes = ["with_mask", "without_mask"]
 data = []
