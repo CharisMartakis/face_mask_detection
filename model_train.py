@@ -1,5 +1,6 @@
 import os
 import sys
+import tensorflow
 from tensorflow.keras.preprocessing.image import load_img
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
@@ -16,23 +17,18 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
+from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
 
-#ORIGINAL BEST VALUES
 INIT_LR = 1e-4
 EPOCHS = 20
 BS = 32
 IMAGE_SIZE = 224
 
-# #TEST MODE
-# INIT_LR = 0.001
-# EPOCHS = 40
-# BS = 2
-# IMAGE_SIZE = 224
-
 
 #									"""Μέρος 1ο - Preprocessing"""
+
 
 folder_of_model = f"models/{INIT_LR}_{EPOCHS}_{BS}"
 
@@ -42,8 +38,8 @@ if os.path.exists(folder_of_model):
 	sys.exit()
 
 print(f"[ΕΝΗΜΕΡΩΣΗ] Η εκπαίδευση του μοντέλου με ονομασία έκδοσης '{folder_of_model[7:]}' ξεκίνησε...")
-os.makedirs(folder_of_model)
 
+os.makedirs(folder_of_model)
 dataset_location = r"D:\projects\face_mask_detection\dataset"
 dataset_classes = ["with_mask", "without_mask"]
 data = []
@@ -55,7 +51,6 @@ for dataset_class in dataset_classes:
 	path = os.path.join(dataset_location, dataset_class)
 
 	for img_name in os.listdir(path):
-
 		img_path = os.path.join(path, img_name)
 		image = load_img(img_path, target_size=(IMAGE_SIZE, IMAGE_SIZE))
 		image = img_to_array(image)
@@ -67,11 +62,14 @@ lb = LabelBinarizer()
 labels = lb.fit_transform(labels)
 labels = to_categorical(labels)
 data = np.array(data, dtype="float32")
+
 labels = np.array(labels)
 
 (train_images, test_images, train_labels, test_labels) = train_test_split(data, labels, test_size=0.20, stratify=labels, random_state=42)
 
+
 #									"""Μέρος 2ο - Data augmentation-Αύξηση δεδομένων"""
+
 
 aug_gen = ImageDataGenerator(
 rotation_range=20,
@@ -82,15 +80,19 @@ shear_range=0.15,
 horizontal_flip=True,
 fill_mode="nearest")
 
+
 #						"""Μέρος 3ο - Κατασκευή του μοντέλου με τη μέθοδο TRANSFER LEARNING """
 
+
 baseModel = MobileNetV2(weights="imagenet", include_top=False, input_tensor=Input(shape=(IMAGE_SIZE, IMAGE_SIZE, 3)))
+
 headModel = baseModel.output
 headModel = AveragePooling2D(pool_size=(7, 7))(headModel)
 headModel = Flatten(name="flatten")(headModel)
 headModel = Dense(128, activation="relu")(headModel)
 headModel = Dropout(0.5)(headModel)
 headModel = Dense(2, activation="softmax")(headModel)
+
 model = Model(inputs=baseModel.input, outputs=headModel)
 
 for layer in baseModel.layers:
@@ -102,17 +104,43 @@ print("[ΕΝΗΜΕΡΩΣΗ] Γίνεται μεταγλώττιση του μο�
 
 model.compile(loss="binary_crossentropy", optimizer=adam_optim, metrics=["accuracy"])
 
-#						"""Μέρος 4ο - Εκπαίδευση και αξιολόγηση του μοντέλου """
+
+#						"""Μέρος 4ο - Εκπαίδευση του μοντέλου """
+
 
 print("[ΕΝΗΜΕΡΩΣΗ] Η εκπαίδευση του μοντέλου(head μέρος) ξεκίνησε...")
 
 HISTORY = model.fit( aug_gen.flow(train_images, train_labels, batch_size=BS), steps_per_epoch=len(train_images) // BS, validation_data=(test_images, test_labels), validation_steps=len(test_images) // BS, epochs=EPOCHS)
+
+print("[ΕΝΗΜΕΡΩΣΗ] Αποθήκευση του μοντέλου ανίχνευσης μάσκας στον φάκελο...")
+
 model.save(f"{folder_of_model}/mask_detection_model.h5")
 
-print("[ΕΝΗΜΕΡΩΣΗ] Αξιολόγηση του νευρωνικού δικτύου...")
 
+#						"""Μέρος 5ο - Μετατροπή του μοντέλου απο .h5 σε .tflite """
+
+
+print("[ΕΝΗΜΕΡΩΣΗ] Μετατροπή του μοντέλου απο .h5 σε μορφή .tflite...")
+
+loaded_model = tensorflow.keras.models.load_model(f"{folder_of_model}/mask_detection_model.h5")
+converter = tensorflow.lite.TFLiteConverter.from_keras_model(loaded_model)
+converter.optimizations = [tensorflow.lite.Optimize.DEFAULT]
+tflite_model = converter.convert()
+open(f"{folder_of_model}/mask_detection_model_optim.tflite", "wb").write(tflite_model)
+
+
+#						"""Μέρος 6ο - Αξιολόγηση του μοντέλου """
+
+
+print("[ΕΝΗΜΕΡΩΣΗ] Αξιολόγηση του νευρωνικού δικτύου...")
 predictions = model.predict(test_images, batch_size=BS)
+test_labels_binary = np.argmax(test_labels, axis=1)
+predictions_binary = np.argmax(predictions, axis=1)
+fpr, tpr, thresholds = roc_curve(test_labels_binary, predictions_binary)
+auc_score = auc(fpr, tpr)
+
 predictions = np.argmax(predictions, axis=1)
+
 report = classification_report(test_labels.argmax(axis=1), predictions, target_names=lb.classes_)
 print(report)
 
@@ -120,9 +148,8 @@ with open(f'{folder_of_model}/classification_report.txt', 'w') as file:
 	file.write(report)
 	file.close()
 
-#						"""Μέρος 5ο - Δημιουργία διαγραμμάτων για το training loss & accuracy """
+#						"""Μέρος 7ο - Δημιουργία διαγραμμάτων loss, accuracy και ROC"""
 
-#Εκτύπωση ενημερωτικού μηνύματος στην οθόνη
 print("[ΕΝΗΜΕΡΩΣΗ] Η γραφική απεικόνιση των μετρήσεων ξεκίνησε...")
 
 final_train_loss = HISTORY.history["loss"][-1]
@@ -193,5 +220,18 @@ tick_locations = np.arange(0, EPOCHS+1, 5)
 tick_locations[0] = 1
 plt.xticks(tick_locations, tick_locations)
 plt.savefig(f"{folder_of_model}/accuracy_plot_dark_background.png", dpi=300, bbox_inches="tight")
+
+plt.style.use("bmh")
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % auc_score)
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic')
+plt.legend(loc="lower right")
+plt.margins(x=0, y=0)
+plt.savefig(f"{folder_of_model}/ROC_plot.png", dpi=300, bbox_inches="tight")
 
 print("[ΕΝΗΜΕΡΩΣΗ] Τέλος εκπαίδευσης του μοντέλου. Τερματισμός προγράμματος...")
