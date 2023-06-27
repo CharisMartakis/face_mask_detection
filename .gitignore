@@ -128,10 +128,11 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-#tests
+#Testing
 
 #Mine things
 /Untitled.ipynb
 .idea
-name_changes.txt
-/tests/test1.py
+Thesis_codes_explained(tflite_version)/name_changes_train_model.txt
+Thesis_codes_explained(tflite_version)/name_changes_face_mask_d.txt
+/Testing
