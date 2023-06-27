@@ -107,7 +107,7 @@ model.compile(loss="binary_crossentropy", optimizer=adam_optim, metrics=["accura
 print("[ΕΝΗΜΕΡΩΣΗ] Η εκπαίδευση του μοντέλου(head μέρος) ξεκίνησε...")
 
 HISTORY = model.fit( aug_gen.flow(train_images, train_labels, batch_size=BS), steps_per_epoch=len(train_images) // BS, validation_data=(test_images, test_labels), validation_steps=len(test_images) // BS, epochs=EPOCHS)
-model.save(f"{folder_of_model}/mask_detector.model", save_format="h5")
+model.save(f"{folder_of_model}/mask_detection_model.h5")
 
 print("[ΕΝΗΜΕΡΩΣΗ] Αξιολόγηση του νευρωνικού δικτύου...")
 

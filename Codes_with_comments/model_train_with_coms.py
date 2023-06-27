@@ -6,6 +6,7 @@
 #όνομα συνήθως πιο σαφές και πιο σύντομο.
 import os
 import sys
+import tensorflow
 from tensorflow.keras.preprocessing.image import load_img
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
@@ -22,6 +23,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
+from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
 
@@ -379,7 +381,8 @@ print("[ΕΝΗΜΕΡΩΣΗ] Γίνεται μεταγλώττιση του μο�
 model.compile(loss="binary_crossentropy", optimizer=adam_optim, metrics=["accuracy"])
 
 
-#						"""Μέρος 4ο - Εκπαίδευση και αξιολόγηση του μοντέλου """
+#						"""Μέρος 4ο - Εκπαίδευση του μοντέλου """
+
 
 #Εκτύπωση ενημερωτικού μηνύματος στην οθόνη
 print("[ΕΝΗΜΕΡΩΣΗ] Η εκπαίδευση του μοντέλου(head μέρος) ξεκίνησε...")
@@ -417,8 +420,52 @@ print("[ΕΝΗΜΕΡΩΣΗ] Αποθήκευση του μοντέλου ανί�
 #απο την αρχή το μοντέλο κάθε φορά που το χρειαζόμαστε, κάτι το οποίο είναι χρονοβόρο συνήθως. Επίσης το αποθηκευμένο μοντέλο
 #μπορεί να κληθεί μέσα από κάποιο άλλο πρόγραμμα και να χρησιμοποιηθεί όποτε είναι αναγκαίο με την εντολή load_model απο
 #τη βιβλιοθήκη  tensorflow.keras.models.
-model.save(f"{folder_of_model}/mask_detector.model", save_format="h5")
+model.save(f"{folder_of_model}/mask_detection_model.h5")
 
+
+#						"""Μέρος 5ο - Μετατροπή του μοντέλου απο .h5 σε .tflite """
+
+
+#Εκτύπωση ενημερωτικού μηνύματος στην οθόνη
+print("[ΕΝΗΜΕΡΩΣΗ] Μετατροπή του μοντέλου απο .h5 σε μορφή .tflite...")
+
+#Σε αυτό το σημείο ξεκινά η διαδικασία μετατροπής του μοντέλου που δημιουργήθηκε σε πιο ελαφρυά έκδοση δηλαδή σε μορφή
+#.tflite. Τα μοντέλα .tflite φτιάχνονται για να λειρουργούν πιο γρήγορα και πιο αποτελεσματικά στα λειτουργικά των edge
+#devices. Γιαυτό ένα μοντέλο .tflite εαν χρησιμοποιηθεί π.χ. σε υπολογιστή με Windows 10, θα αργεί περισσότερο τον κώδικα
+#σε αντίθεση με ένα .h5 μοντέλο, παρόλο που το πρώτο σαν αρχείο είναι πολύ πιο ελαφρύ. Απο την άλλη ένα .tflite μοντέλο
+#εκτελεί τον κώδικα πολύ πιο γρήγορα σε ένα raspberry pi απότι ένα .h5 μοντέλο. Επίσης πρέπει να αναφερθεί πως ένα μοντέλο
+#δεν μπορεί να δημιουργηθεί κατευθείαν σε μορφή .tflte αλλά μπορεί μόνο να μετατραπεί σε αυτό αφού πρώτα δημιουργηθεί το
+#μοντέλο σε μορφή .h5 ή μορφή φακέλου. Η βασική διαφορά της μορφής .h5  απο τη μορφή φακέλου είναι πως στην πρώτη όλα τα
+#αρχεία που δημιουργούνται και αποτελούν το μοντέλο τοποθετούνται μέσα σε ένα μόνο αρχείο με κατάληξη .h5 ενώ στην δέυτερη
+#μορφή όλα αυτά τα αρχεία τοποθετούνται σε έναν φάκελο. Έτσι η μορφή .h5 είναι πιο βολική στην περίπτωση του συγκεκριμένου
+#project.
+#Αρχικά γίνεται φόρτωση του μοντέλου που αποθηκέυτηκε στη μεταβλητή loaded_model για χρήση του στα επόμενα βήματα και τη μετατροπή του
+#σε μορφή .tflite. Η φόρτωση γίνεται καλώντας την μέθοδο load_model της βιβλιοθήκης tensorflow.keras.models και δίνοντάς
+#της ως όρισμα την διεύθυνση της τοποθεσίας που έχει αποθηκευτεί το αρχείο του μοντέλου στον υπολογιστή.
+loaded_model = tensorflow.keras.models.load_model(f"{folder_of_model}/mask_detection_model.h5")
+
+#Δημιουργία της μεταβλητής/του αντικειμένου converter που θα περιέχει όλες τις πληροφορίες σχετικά με την μετατροπή.
+#Συγκεκριμένα το converter ενημερώνεται σχετικά με το μοντέλο που θα γίνει η επεξεργασία, τα βάρη του κλπ. Η βιβλιοθήκη
+#που χρησιμοποιήται είναι η tensorflow.lite που περιέχει διάφορες συναρτήσεις χρήσιμες είτε για την δημιουργία ενός .tflite
+#αρχείου, είτε για την επεξεργασία του.
+converter = tensorflow.lite.TFLiteConverter.from_keras_model(loaded_model)
+
+#Το converter.optimizations ενεργοποιεί το optimization του νέου μοντέλου, που είναι μια διαδικασία πολύ σημαντική και
+#χρήσιμη. Ενώ είναι προεραιτική εντολή, είναι πρακτικά απαραίτητη αφού μειώνει το μέγεθος του μοντέλου αρκετά σε σχέση
+#με το αρχικό μοντέλο .h5 και το κάνει πιο γρήγορο. Χωρίς αυτή την εντολή, το νέο μοντέλο πάλι θα ήταν πιο ελαφρύ αλλά
+#όχι τόσο πολύ.
+converter.optimizations = [tensorflow.lite.Optimize.DEFAULT]
+
+#Μετατροπή του μοντέλου απο την μορφή .h5 σε μορφή .tflite συμβατή με το raspberry pi χρησιμοποιώντας τη μέθοδο .convert()
+#πάνω στο αντικείμενο converter. Όλες οι πληροφορίες για το νέο μοντέλο αποθηκεύονται προσωρινά στη μεταβλητή tflite_model.
+tflite_model = converter.convert()
+
+#Αποθήκευση του νέου μοντέλου με όνομα mask_detection_model_optim.tflite σε μορφή αρχείου, στον φάκελο που έχει δημιουργηθεί
+#ήδη για την συγκεκριμένη εκτέλεση του κώδικα.
+open(f"{folder_of_model}/mask_detection_model_optim.tflite", "wb").write(tflite_model)
+
+
+#						"""Μέρος 6ο - Αξιολόγηση του μοντέλου """
 
 
 #Εκτύπωση ενημερωτικού μηνύματος στην οθόνη
@@ -427,6 +474,25 @@ print("[ΕΝΗΜΕΡΩΣΗ] Αξιολόγηση του νευρωνικού δ�
 #Πρόβλεψη αποτελεσμάτων του μοντέλου που εκπαιδεύτηκε χρησιμοποιώντας το testing set. Η μέθοδος predict() εισάγει τις εικόνες
 #του testing set χωρίζοντας τες σε ίσα Batches και αποθηκεύει στη μεταβλητή predictions τις προβλέψεις ως πιθανότητες.
 predictions = model.predict(test_images, batch_size=BS)
+
+#Δημιουργία array, που θα περιέχει τα labels του testing set, σε μορφή τέτοια έτσι ώστε να την επεξεργαστεί παρακάτω
+#η μέθοδος roc_curve χωρίς προβλήματα συμβατότητας.
+test_labels_binary = np.argmax(test_labels, axis=1)
+
+#Δημιουργία array, που θα περιέχει τις προβλέψεις που έγιναν για το μοντέλο πάνω στις εικόνες του testing set, σε μορφή
+#τέτοια έτσι ώστε να το επεξεργαστεί παρακάτω η μέθοδος roc_curve χωρίς προβλήματα συμβατότητας.
+predictions_binary = np.argmax(predictions, axis=1)
+
+#Υπολογισμός των FPR(False Positive Rate), TPR(True Positive Rate), και thresholds(τα αντίστοιχα κατώφλια τους) χρησιμοποιώντας
+#την μέθοδο roc_curve() της βιβλιοθήκης NumPy. Τα ορίσματα που δέχεται η μέθοδος είναι οι μεταβλητές test_labels_binary και
+#predictions_binary που δημιουργήθηκαν παραπάνω και περιέχουν τις εικόνες του testing set καθώς και τα labels τους σε μορφή
+#binary. Τα FPR, TPR και τα thresholds τους θα δημιουργήσουν παρακάτω στον κώδικα το διάγραμμα ROC( Receiver Operating
+#Characteristic)
+fpr, tpr, thresholds = roc_curve(test_labels_binary, predictions_binary)
+
+#Υπολογισμός του AUC(Area Under the ROC Curve), που είναι η περιοχή κάτω απο την ROC curve , απο τα fpr και tpr χρησιμοποιώντας την μέθοδο auc() της
+#βιβλιοθήκης scikit-learn. Ο αριθμός AUC δείχνει την απόδοση του μοντέλου.
+auc_score = auc(fpr, tpr)
 
 #Η μέθοδος .argmax της βιβλιοθήκης numpy, μετατρέπει τις προβλεπόμενες πιθανότητες, του predictions, σε ετικέτες κλάσεων
 #(class labels) επιλέγοντας τον δείκτη(index) με την υψηλότερη πιθανότητα για κάθε πρόβλεψη. Ο άξονας που αναζητά η μέθοδος
@@ -478,7 +544,7 @@ with open(f'{folder_of_model}/classification_report.txt', 'w') as file:
 	#Κλείσιμο του αρχείου αφού τελείωσε η επεξεργασία του.
 	file.close()
 
-#						"""Μέρος 5ο - Δημιουργία διαγραμμάτων για το training loss & accuracy """
+#						"""Μέρος 7ο - Δημιουργία διαγραμμάτων loss, accuracy και ROC"""
 
 #Εκτύπωση ενημερωτικού μηνύματος στην οθόνη
 print("[ΕΝΗΜΕΡΩΣΗ] Η γραφική απεικόνιση των μετρήσεων ξεκίνησε...")
@@ -628,6 +694,24 @@ tick_locations = np.arange(0, EPOCHS+1, 5)
 tick_locations[0] = 1
 plt.xticks(tick_locations, tick_locations)
 plt.savefig(f"{folder_of_model}/accuracy_plot_dark_background.png", dpi=300, bbox_inches="tight")
+
+#Δημιουργία διαγράμματος σχετικά με την ROC curve
+
+#Για τη δημιουργία αυτού του διαγράμματος ακολουθείται η ίδια διαδικασία με το πρώτο διάγραμμα αλλάζοντας μόνο τα δεδομένα
+#που θα εμφανιστούν καθώς και γίνεται ορισμός των τιμών που θα εμφανίζει ο άξονας x και y με τις μεθόδους xlim και ylim
+#αντίστοιχα.
+plt.style.use("bmh")
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % auc_score)
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic')
+plt.legend(loc="lower right")
+plt.margins(x=0, y=0)
+plt.savefig(f"{folder_of_model}/ROC_plot.png", dpi=300, bbox_inches="tight")
 
 #Εκτύπωση ενημερωτικού μηνύματος στην οθόνη
 print("[ΕΝΗΜΕΡΩΣΗ] Τέλος εκπαίδευσης του μοντέλου. Τερματισμός προγράμματος...")
