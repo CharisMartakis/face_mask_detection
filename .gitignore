@@ -133,6 +133,6 @@ dmypy.json
 #Mine things
 /Untitled.ipynb
 .idea
-name_changes_train_model.txt
+Codes_with_comments/name_changes_train_model.txt
 name_changes_face_mask_d.txt
 /tests/test1.py
