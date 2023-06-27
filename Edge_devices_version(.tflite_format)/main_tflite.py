@@ -79,12 +79,12 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
     return (locs, preds)
 
 # path to the face detector model
-prototxtPath = r"/home/pi/my_project/success/face_mask_detection_tflite/face_detector/deploy.prototxt"
-weightsPath = r"/home/pi/my_project/success/face_mask_detection_tflite/face_detector/res10_300x300_ssd_iter_140000.caffemodel"
+prototxtPath = r"face_detector_model/deploy.prototxt"
+weightsPath = r"face_detector_model/res10_300x300_ssd_iter_140000.caffemodel"
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
 # load the face mask detector model from disk
-mask_string = r"/home/pi/my_project/success/face_mask_detection_tflite/mask_detection_model_optim.tflite"
+mask_string = r"mask_detection_model_optim.tflite"
 maskNet = tf.lite.Interpreter(model_path=mask_string)
 maskNet.allocate_tensors()
 input_details = maskNet.get_input_details()

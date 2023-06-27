@@ -15,7 +15,7 @@ def detect_faces(frame, face_cascade):
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 # Load the face mask detector model from disk
-mask_string = "/home/pi/my_project/success/face_mask_detection_tflite/mask_detection_model_optim.tflite"
+mask_string = r"mask_detection_model_optim.tflite"
 maskNet = tf.lite.Interpreter(model_path=mask_string)
 maskNet.allocate_tensors()
 
