@@ -76,7 +76,7 @@ weightsPath = r"face_detector_model/res10_300x300_ssd_iter_140000.caffemodel"
 faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
 # load the face mask detector model from disk
-mask_string = r"mask_detector.model"
+mask_string = r"mask_detection_model.h5"
 
 maskNet = load_model(mask_string)
 #ayto edw einai lathos k kollaei to systhma!
