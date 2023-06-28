@@ -55,6 +55,16 @@ vs = VideoStream(src=0).start()
 fl = 0
 #fps=0
 
+# # Define the output video file name and properties
+# output_file = "output_video.avi"
+# output_width = 400
+# output_height = 300
+# output_fps = 30.0
+
+# Initialize the video writer
+#fourcc = cv2.VideoWriter_fourcc(*"XVID")
+#writer = cv2.VideoWriter(output_file, fourcc, output_fps, (output_width, output_height))
+
 while True:
 	#tStart = time.time()
 
@@ -87,12 +97,12 @@ while True:
 	#tEnd = time.time()
 	#loopTime = tEnd - tStart
 	#fps = .9 * fps + .1 * (1 / loopTime)
-
+	#writer.write(frame)
 
 	key = cv2.waitKey(1) & 0xFF
 	if key == 27:
 		break
-
+#writer.release()
 vs.stream.release()
 cv2.destroyAllWindows()
 
