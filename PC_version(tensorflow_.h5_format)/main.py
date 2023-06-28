@@ -54,7 +54,7 @@ fl = 0
 
 while True:
 
-	if cv2.getWindowProperty("Mask_Detection", cv2.WND_PROP_VISIBLE) < 1 & fl == 1:
+	if cv2.getWindowProperty("Mask Detection", cv2.WND_PROP_VISIBLE) < 1 & fl == 1:
 		break
 	else:
 		fl = 1
@@ -76,7 +76,7 @@ while True:
 			cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
 		cv2.rectangle(frame, (startX, startY), (endX, endY), color, 2)
 
-	cv2.imshow("Mask_Detection", frame)
+	cv2.imshow("Mask Detection", frame)
 
 	key = cv2.waitKey(1) & 0xFF
 

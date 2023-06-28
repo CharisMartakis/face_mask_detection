@@ -23,7 +23,7 @@ fl = 0
 
 while True:
 
-	if cv2.getWindowProperty("Mask_Detection", cv2.WND_PROP_VISIBLE) < 1 & fl == 1:
+	if cv2.getWindowProperty("Mask Detection", cv2.WND_PROP_VISIBLE) < 1 & fl == 1:
 		break
 	else:
 		fl = 1
