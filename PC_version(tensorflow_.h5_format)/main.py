@@ -48,10 +48,17 @@ faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 mask_string = r"mask_detection_model.h5"
 maskNet = load_model(mask_string)
 
-print("[INFO] starting video stream...")
+print("[ΕΝΗΜΕΡΩΣΗ] Το βίντεο ξεκίνησε...")
 vs = VideoStream(src=0).start()
+fl = 0
 
 while True:
+
+	if cv2.getWindowProperty("Mask_Detection", cv2.WND_PROP_VISIBLE) < 1 & fl == 1:
+		break
+	else:
+		fl = 1
+
 	frame = vs.read()
 	frame = imutils.resize(frame, width=400)
 
@@ -69,10 +76,11 @@ while True:
 			cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
 		cv2.rectangle(frame, (startX, startY), (endX, endY), color, 2)
 
-	cv2.imshow("Frame", frame)
+	cv2.imshow("Mask_Detection", frame)
+
 	key = cv2.waitKey(1) & 0xFF
 
-	if key == ord("q"):
+	if key == 27:
 		break
 
 vs.stream.release()

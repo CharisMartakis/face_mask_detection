@@ -1,10 +1,10 @@
+import tensorflow as tf
 import cv2
 import imutils
 from imutils.video import VideoStream
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 import numpy as np
-import tensorflow as tf
 
 def detect_faces(frame, face_cascade):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -17,10 +17,17 @@ mask_string = r"mask_detection_model_optim.tflite"
 maskNet = tf.lite.Interpreter(model_path=mask_string)
 maskNet.allocate_tensors()
 
-print("[INFO] starting video stream...")
+print("[ΕΝΗΜΕΡΩΣΗ] Το βίντεο ξεκίνησε...")
 vs = VideoStream(src=0).start()
+fl = 0
 
 while True:
+
+	if cv2.getWindowProperty("Mask_Detection", cv2.WND_PROP_VISIBLE) < 1 & fl == 1:
+		break
+	else:
+		fl = 1
+
     frame = vs.read()
     frame = imutils.resize(frame, width=400)
 
@@ -43,18 +50,18 @@ while True:
         preds = np.squeeze(output_tensor)
 
         (mask, withoutMask) = preds
+
         label = "Mask" if mask > withoutMask else "No Mask"
         color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
-
         label = "{}: {:.2f}%".format(label, max(mask, withoutMask) * 100)
 
         cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
         cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
 
-    cv2.imshow("Frame", frame)
+    cv2.imshow("Mask Detection", frame)
     key = cv2.waitKey(1) & 0xFF
 
-    if key == ord("q"):
+    if key == 27:
         break
 
 vs.stream.release()
