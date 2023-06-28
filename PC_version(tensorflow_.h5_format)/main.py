@@ -5,6 +5,8 @@ from imutils.video import VideoStream
 import numpy as np
 import imutils
 import cv2
+#import time
+
 def detect_and_predict_mask(frame, faceNet, maskNet):
 	(h, w) = frame.shape[:2]
 	blob = cv2.dnn.blobFromImage(frame, 1.0, (224, 224),
@@ -51,8 +53,11 @@ maskNet = load_model(mask_string)
 print("[ΕΝΗΜΕΡΩΣΗ] Το βίντεο ξεκίνησε...")
 vs = VideoStream(src=0).start()
 fl = 0
+#fps=0
 
 while True:
+	#tStart = time.time()
+
 
 	if cv2.getWindowProperty("Mask Detection", cv2.WND_PROP_VISIBLE) < 1 & fl == 1:
 		break
@@ -76,10 +81,15 @@ while True:
 			cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
 		cv2.rectangle(frame, (startX, startY), (endX, endY), color, 2)
 
+	#cv2.putText(frame, str(int(fps)) + ' FPS', (30,60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,0,255), 3)
 	cv2.imshow("Mask Detection", frame)
 
-	key = cv2.waitKey(1) & 0xFF
+	#tEnd = time.time()
+	#loopTime = tEnd - tStart
+	#fps = .9 * fps + .1 * (1 / loopTime)
 
+
+	key = cv2.waitKey(1) & 0xFF
 	if key == 27:
 		break
 
