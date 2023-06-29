@@ -5,6 +5,7 @@ from imutils.video import VideoStream
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 import numpy as np
+import sys
 
 def detect_faces(frame, face_cascade):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -22,11 +23,10 @@ vs = VideoStream(src=0).start()
 fl = 0
 
 while True:
-
-	if cv2.getWindowProperty("Mask Detection", cv2.WND_PROP_VISIBLE) < 1 & fl == 1:
-		break
-	else:
-		fl = 1
+    if fl == 1:
+        if cv2.getWindowProperty("Mask Detection", cv2.WND_PROP_VISIBLE) < 1:
+            break
+    fl = 1
 
     frame = vs.read()
     frame = imutils.resize(frame, width=400)
@@ -66,4 +66,3 @@ while True:
 
 vs.stream.release()
 cv2.destroyAllWindows()
-
