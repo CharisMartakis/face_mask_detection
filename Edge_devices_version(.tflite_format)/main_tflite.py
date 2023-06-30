@@ -39,7 +39,6 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
 			locs.append((startX, startY, endX, endY))
 
 	if len(faces) > 0:
-		preds = []
 
 		for face in faces:
 			face = np.expand_dims(face, axis=0)
@@ -98,4 +97,3 @@ while True:
 
 vs.stream.release()
 cv2.destroyAllWindows()
-
