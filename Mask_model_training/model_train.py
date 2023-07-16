@@ -112,7 +112,7 @@ model.compile(loss="binary_crossentropy", optimizer=adam_optim, metrics=["accura
 
 print("[ΕΝΗΜΕΡΩΣΗ] Η εκπαίδευση του μοντέλου(head μέρος) ξεκίνησε...")
 
-HISTORY = model.fit( aug_gen.flow(train_images, train_labels, batch_size=BS), steps_per_epoch=len(train_images) // BS, validation_data=(test_images, test_labels), validation_steps=len(test_images) // BS, epochs=EPOCHS)
+HISTORY = model.fit( aug_gen.flow(train_images, train_labels, batch_size=BS), steps_per_epoch=(len(train_images) // BS) +1, validation_data=(test_images, test_labels), validation_steps=(len(test_images) // BS) +1, epochs=EPOCHS)
 
 print("[ΕΝΗΜΕΡΩΣΗ] Αποθήκευση του μοντέλου ανίχνευσης μάσκας στον φάκελο...")
 
